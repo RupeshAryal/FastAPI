@@ -1,16 +1,36 @@
 from fastapi import FastAPI, HTTPException, status
-from fastapi.params import Body
 
 from pydantic import BaseModel, ConfigDict
+
+import mysql.connector
+import time
+import datetime
+
+# connecting to the mysql database, the api won't run until everything is set up.
+while True:
+    try:
+        my_conn = mysql.connector.connect(host='localhost',
+                                          database='office',
+                                          user='root',
+                                          password='root')
+
+        my_cursor = my_conn.cursor()
+        print('Connecting to the database...')
+        print("You are connected to the office database successfully !!")
+        break
+
+    except Exception as e:
+        print("Error", e)
+        time.sleep(4)
 
 app = FastAPI()
 
 
 class Post(BaseModel):
     model_config = ConfigDict(extra='forbid')
-    id: int
     title: str
     content: str
+    published: bool = 0
 
 
 post = [{'id': 1, 'title': 'title of post1', 'content': 'content of content1'},
@@ -24,13 +44,33 @@ def root():
 
 @app.get('/posts')
 def get_posts():
-    return {"data": post}
+    query = ("SELECT * FROM posts")
+    my_cursor.execute(query)
+    data = my_cursor.fetchall()
+
+    json_format = []
+    for p in data:
+        temp = {'id': p[0],
+                'title': p[1],
+                'content': p[2],
+                'published': p[3],
+                'created_at': p[4]
+                }
+        json_format.append(temp)
+
+    return {"data": json_format}
 
 
 @app.post('/posts', status_code=status.HTTP_201_CREATED)
 def create_posts(new_post: Post):
-    new_data = {'id': new_post.id, 'title': new_post.title, 'content': new_post.content}
-    post.append(new_data)
+    new_data = (new_post.title, new_post.content, new_post.published)
+
+    add_post = ("INSERT INTO posts "
+                "(title, content, published) "
+                "VALUES (%s, %s, %s)")
+
+    my_cursor.execute(add_post, new_data)
+    my_conn.commit()
 
     return {"Message": "Data successfully posted to the array "}
 
@@ -43,11 +83,22 @@ def find_post(id):
 
 @app.get("/posts/{id}")
 def get_post(id: int):
-    p = find_post(id)
-    if not p:
+    query = "SELECT * FROM posts WHERE id = %s;"
+    my_cursor.execute(query, (id,))
+    data = my_cursor.fetchone()
+
+    if not data:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"post with id:{id} was not found")
-    return {"post detail": p}
+    post_ = {
+        'id': data[0],
+        'title': data[1],
+        'content': data[2],
+        'published': data[3],
+        'created_at': data[4]
+    }
+
+    return {"post_detail": post_}
 
 
 # title: str, content: str, category: str, Published or Draft: Bool
@@ -80,6 +131,5 @@ def update_post(id: int, post: Post):
 
     post_dict = post.model_dump()
     post_dict['id'] = id
-
 
     return {"message": "updated post"}

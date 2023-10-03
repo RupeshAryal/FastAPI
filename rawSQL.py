@@ -75,12 +75,6 @@ def create_posts(new_post: Post):
     return {"Message": "Data successfully posted to the array "}
 
 
-def find_post(id):
-    for p in post:
-        if p['id'] == id:
-            return p
-
-
 @app.get("/posts/{id}")
 def get_post(id: int):
     query = "SELECT * FROM posts WHERE id = %s;"
@@ -105,31 +99,36 @@ def get_post(id: int):
 
 @app.delete("/posts/{id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_post(id: int):
-    index = get_index(id)
-    if index is None:
+    query = ("DELETE FROM posts WHERE id = %s")
+
+    my_cursor.execute(query, (id,))
+    my_conn.commit()
+
+    query = ("SELECT * FROM posts WHERE id = %s")
+
+    my_cursor.execute(query, (id,))
+    data = my_cursor.fetchone()
+
+    if data is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail="error: the post does not exist")
-
-    post.pop(index['id'])
 
     return {"message": "post was successfully deleted"}
 
 
-def get_index(id):
-    for p in post:
-        if p['id'] == id:
-            return p
-
-
-@app.put("posts/id")
+@app.put("/posts/{id}")
 def update_post(id: int, post: Post):
-    print(post)
-    index = get_index(id)
-    if index is None:
+    query = ("UPDATE posts SET title = %s, content = %s, published = %s WHERE id = %s")
+    my_cursor.execute(query, (post.title, post.content, post.published, id))
+
+    query = ("SELECT * FROM posts WHERE id = %s")
+
+    my_cursor.execute(query, (id,))
+    data = my_cursor.fetchone()
+    my_conn.commit()
+
+    if data is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail="error: the post does not exist")
-
-    post_dict = post.model_dump()
-    post_dict['id'] = id
 
     return {"message": "updated post"}

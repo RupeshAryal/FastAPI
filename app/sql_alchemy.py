@@ -1,15 +1,9 @@
-from typing import Optional
-from fastapi import FastAPI, Response, status, HTTPException
-
-from fastapi.params import Body
+from fastapi import FastAPI
 from pydantic import BaseModel, ConfigDict
-from random import randrange
-import mysql.connector
 
-from sqlalchemy.orm import Session
-import models
-from database import engine, Base, get_db
 
+from app.database import engine
+from app import models
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()

@@ -5,7 +5,8 @@ from ..database import get_db
 from .. import models, schemas, utils
 
 router = APIRouter(
-    prefix="/users"
+    prefix="/users",
+    tags=['user']
 )
 
 

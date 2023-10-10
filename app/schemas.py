@@ -21,9 +21,11 @@ class PostResponse(BaseModel):
     class Config:
         orm_model = True
 
+
 class UserCreate(BaseModel):
     email: EmailStr
     password: str
+
 
 class UserOut(BaseModel):
     id: int
@@ -36,13 +38,11 @@ class UserOut(BaseModel):
 class UserLogin(BaseModel):
     email: EmailStr
 
+
 class Token(BaseModel):
     access_token: str
-    toke_type: str
+    token_type: str
+
 
 class TokenData(BaseModel):
-    id: Optional[str] = None
-
-
-
-
+    id: Optional[int] = None
